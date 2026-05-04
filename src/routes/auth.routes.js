@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
+const { rateLimitAuth } = require('../middleware/rateLimit.middleware');
+
+const authLimiter = rateLimitAuth();
 
 /**
  * @swagger
@@ -16,7 +19,7 @@ const authController = require('../controllers/auth.controller');
  *     summary: Register and receive JWT
  *     tags: [Auth]
  */
-router.post('/register', authController.register);
+router.post('/register', authLimiter, authController.register);
 
 /**
  * @swagger
@@ -25,6 +28,6 @@ router.post('/register', authController.register);
  *     summary: Login and receive JWT
  *     tags: [Auth]
  */
-router.post('/login', authController.login);
+router.post('/login', authLimiter, authController.login);
 
 module.exports = router;

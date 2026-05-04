@@ -1,5 +1,12 @@
 const mongoose = require('mongoose');
 const Order = require('../models/order.model');
+const {
+  STATS_PREFIX,
+  statsCacheTtlSec,
+  cacheGetJson,
+  cacheSetJson,
+  invalidateOrdersStatsCache
+} = require('../services/redis.service');
 
 const isAdmin = (req) => req.user.role === 'admin';
 
@@ -15,6 +22,7 @@ exports.createOrder = async (req, res) => {
     ...(status != null ? { status } : {})
   });
   await order.populate('user', 'name email role');
+  await invalidateOrdersStatsCache();
   res.status(201).json(order);
 };
 
@@ -63,6 +71,7 @@ exports.updateOrder = async (req, res) => {
   const { user: _ignored, ...updates } = req.body;
   const order = await Order.findByIdAndUpdate(req.params.id, updates, { new: true })
     .populate('user', 'name email role');
+  await invalidateOrdersStatsCache();
   res.json(order);
 };
 
@@ -76,6 +85,7 @@ exports.deleteOrder = async (req, res) => {
     return res.status(403).json({ message: 'Forbidden' });
   }
   await Order.findByIdAndDelete(req.params.id);
+  await invalidateOrdersStatsCache();
   res.json({ message: 'Order deleted' });
 };
 
@@ -84,6 +94,14 @@ exports.deleteOrder = async (req, res) => {
  */
 exports.getTopUsersByOrderCount = async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit, 10) || 10, 100);
+  const cacheKey = `${STATS_PREFIX}top-users:${limit}`;
+  const cached = await cacheGetJson(cacheKey);
+  if (cached != null) {
+    console.log("cached hit",cached)
+    return res.json(cached);
+  }
+  console.log("cached miss")
+  
   const pipeline = [
     { $group: { _id: '$user', orderCount: { $sum: 1 } } },
     { $sort: { orderCount: -1 } },
@@ -109,6 +127,7 @@ exports.getTopUsersByOrderCount = async (req, res) => {
     }
   ];
   const result = await Order.aggregate(pipeline);
+  await cacheSetJson(cacheKey, result, statsCacheTtlSec());
   res.json(result);
 };
 
@@ -116,22 +135,37 @@ exports.getTopUsersByOrderCount = async (req, res) => {
  * Total revenue: sum of amounts for orders that count as revenue (completed).
  */
 exports.getTotalRevenue = async (req, res) => {
+  const cacheKey = `${STATS_PREFIX}revenue`;
+  const cached = await cacheGetJson(cacheKey);
+  if (cached != null) {
+    return res.json(cached);
+  }
+
   const [row] = await Order.aggregate([
     { $match: { status: 'completed' } },
     { $group: { _id: null, totalRevenue: { $sum: '$amount' } } }
   ]);
-  res.json({ totalRevenue: row ? row.totalRevenue : 0 });
+  const payload = { totalRevenue: row ? row.totalRevenue : 0 };
+  await cacheSetJson(cacheKey, payload, statsCacheTtlSec());
+  res.json(payload);
 };
 
 /**
  * Order counts grouped by status.
  */
 exports.getOrdersGroupedByStatus = async (req, res) => {
+  const cacheKey = `${STATS_PREFIX}by-status`;
+  const cached = await cacheGetJson(cacheKey);
+  if (cached != null) {
+    return res.json(cached);
+  }
+
   const result = await Order.aggregate([
     { $group: { _id: '$status', count: { $sum: 1 } } },
     { $sort: { _id: 1 } },
     { $project: { _id: 0, status: '$_id', count: 1 } }
   ]);
+  await cacheSetJson(cacheKey, result, statsCacheTtlSec());
   res.json(result);
 };
 
@@ -139,9 +173,17 @@ exports.getOrdersGroupedByStatus = async (req, res) => {
  * Average order value across all orders.
  */
 exports.getAverageOrderValue = async (req, res) => {
+  const cacheKey = `${STATS_PREFIX}aov`;
+  const cached = await cacheGetJson(cacheKey);
+  if (cached != null) {
+    return res.json(cached);
+  }
+
   const [row] = await Order.aggregate([
     { $group: { _id: null, averageOrderValue: { $avg: '$amount' } } }
   ]);
   const avg = row && row.averageOrderValue != null ? row.averageOrderValue : 0;
-  res.json({ averageOrderValue: Math.round(avg * 100) / 100 });
+  const payload = { averageOrderValue: Math.round(avg * 100) / 100 };
+  await cacheSetJson(cacheKey, payload, statsCacheTtlSec());
+  res.json(payload);
 };
