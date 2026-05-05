@@ -9,7 +9,19 @@ const swaggerSpec = require('./src/swagger/swagger');
 
 const PORT = process.env.PORT || 8080;
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    swaggerOptions: {
+      persistAuthorization: true,
+      docExpansion: 'list',
+      filter: true,
+      displayRequestDuration: true,
+      tryItOutEnabled: true
+    }
+  })
+);
 
 (async () => {
   await connectDB();

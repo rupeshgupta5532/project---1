@@ -6,17 +6,35 @@ const { requireAuth, requireSameUserParamOrAdmin } = require('../middleware/auth
 
 /**
  * @swagger
- * tags:
- *   name: Users
- *   description: User management APIs
- */
-
-/**
- * @swagger
  * /api/users:
  *   post:
  *     summary: Create user (admin only)
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/AdminCreateUserRequest'
+ *     responses:
+ *       201:
+ *         description: User created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Bad request / duplicate email
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorMessage'
+ *       401:
+ *         description: Missing or invalid JWT
+ *       403:
+ *         description: Not admin
  */
 router.post('/', requireAuth, userController.createUser);
 
@@ -26,6 +44,21 @@ router.post('/', requireAuth, userController.createUser);
  *   get:
  *     summary: List all users (admin only)
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Not admin
  */
 router.get('/', requireAuth, userController.getUsers);
 
@@ -33,17 +66,33 @@ router.get('/', requireAuth, userController.getUsers);
  * @swagger
  * /api/users/{id}/orders:
  *   get:
- *     summary: List orders for a user
+ *     summary: Orders for this user (same user or admin)
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
+ *         example: 507f1f77bcf86cd799439011
+ *         description: MongoDB ObjectId of the user
  *     responses:
  *       200:
- *         description: User orders (newest first)
+ *         description: Newest first
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Order'
+ *       400:
+ *         description: Invalid id
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Cannot view another user's orders
  */
 router.get('/:id/orders', requireAuth, requireSameUserParamOrAdmin, orderController.getOrdersByUserId);
 
@@ -51,17 +100,31 @@ router.get('/:id/orders', requireAuth, requireSameUserParamOrAdmin, orderControl
  * @swagger
  * /api/users/{id}:
  *   get:
- *     summary: Get user by ID
+ *     summary: Get user by id (self or admin)
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
+ *         example: 507f1f77bcf86cd799439011
  *     responses:
  *       200:
- *         description: User found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Invalid id
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not found
  */
 router.get('/:id', requireAuth, userController.getUser);
 
@@ -69,15 +132,39 @@ router.get('/:id', requireAuth, userController.getUser);
  * @swagger
  * /api/users/{id}:
  *   put:
- *     summary: Update user
+ *     summary: Update user (self or admin; only admin may change role)
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
+ *         schema:
+ *           type: string
+ *         example: 507f1f77bcf86cd799439011
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateUserRequest'
+ *           examples:
+ *             rename:
+ *               value:
+ *                 name: Alice Updated
+ *                 age: 29
  *     responses:
  *       200:
- *         description: Updated user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not found
  */
 router.put('/:id', requireAuth, userController.updateUser);
 
@@ -85,11 +172,29 @@ router.put('/:id', requireAuth, userController.updateUser);
  * @swagger
  * /api/users/{id}:
  *   delete:
- *     summary: Delete user
+ *     summary: Delete user (self or admin)
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: 507f1f77bcf86cd799439011
  *     responses:
  *       200:
- *         description: User deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DeleteMessage'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not found
  */
 router.delete('/:id', requireAuth, userController.deleteUser);
 
