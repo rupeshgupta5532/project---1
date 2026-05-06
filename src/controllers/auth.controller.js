@@ -4,9 +4,6 @@ const User = require('../models/user.model');
 
 const signToken = (userId) => {
   const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error('JWT_SECRET is not configured');
-  }
   return jwt.sign({ sub: userId.toString() }, secret, { expiresIn: '7d' });
 };
 
@@ -17,13 +14,14 @@ exports.register = async (req, res) => {
     if (!password || String(password).length < 6) {
       return res.status(400).json({ message: 'Password must be at least 6 characters' });
     }
+    const existedUser = await User.findOne({ email });
+    if (existedUser) {
+      return res.status(400).json({ message: 'Email already registered' });
+    }
     const user = await User.create({ name, email, age, password, role: 'user' });
     const token = signToken(user._id);
     return res.status(201).json({ user, token });
   } catch (e) {
-    if (e.code === 11000) {
-      return res.status(400).json({ message: 'Email already registered' });
-    }
     return res.status(500).json({ message: e.message });
   }
 };

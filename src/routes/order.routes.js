@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/order.controller');
-const { requireAuth, requireAdmin } = require('../middleware/auth.middleware');
+const { requireAuth, requireAdmin, requireSameUserParamOrAdmin } = require('../middleware/auth.middleware');
 
 router.use(requireAuth);
 
@@ -153,7 +153,7 @@ router.post('/', orderController.createOrder);
  *       401:
  *         description: Unauthorized
  */
-router.get('/', orderController.getOrders);
+router.get('/',requireSameUserParamOrAdmin, orderController.getOrders);
 
 /**
  * @swagger
@@ -184,7 +184,7 @@ router.get('/', orderController.getOrders);
  *       404:
  *         description: Not found
  */
-router.get('/:id', orderController.getOrder);
+router.get('/:id', requireSameUserParamOrAdmin, orderController.getOrder);
 
 /**
  * @swagger
@@ -219,7 +219,7 @@ router.get('/:id', orderController.getOrder);
  *       404:
  *         description: Not found
  */
-router.put('/:id', orderController.updateOrder);
+router.put('/:id', requireSameUserParamOrAdmin, orderController.updateOrder);
 
 /**
  * @swagger
@@ -253,6 +253,6 @@ router.put('/:id', orderController.updateOrder);
  *       404:
  *         description: Not found
  */
-router.delete('/:id', orderController.deleteOrder);
+router.delete('/:id', requireSameUserParamOrAdmin, orderController.deleteOrder);
 
 module.exports = router;

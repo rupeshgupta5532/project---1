@@ -41,20 +41,11 @@ exports.getOrder = async (req, res) => {
   if (!order) {
     return res.status(404).json({ message: 'Order not found' });
   }
-  if (!isAdmin(req)) {
-    const ownerId = order.user?._id ?? order.user;
-    if (String(ownerId) !== String(req.user._id)) {
-      return res.status(403).json({ message: 'Forbidden' });
-    }
-  }
   res.json(order);
 };
 
 // ORDERS FOR A USER (route ensures same user or admin)
 exports.getOrdersByUserId = async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
-    return res.status(400).json({ message: 'Invalid user id' });
-  }
   const orders = await Order.find({ user: req.params.id }).sort({ createdAt: -1 });
   res.json(orders);
 };
@@ -64,9 +55,6 @@ exports.updateOrder = async (req, res) => {
   const existing = await Order.findById(req.params.id);
   if (!existing) {
     return res.status(404).json({ message: 'Order not found' });
-  }
-  if (!isAdmin(req) && existing.user.toString() !== req.user._id.toString()) {
-    return res.status(403).json({ message: 'Forbidden' });
   }
   const { user: _ignored, ...updates } = req.body;
   const order = await Order.findByIdAndUpdate(req.params.id, updates, { new: true })
@@ -81,9 +69,7 @@ exports.deleteOrder = async (req, res) => {
   if (!existing) {
     return res.status(404).json({ message: 'Order not found' });
   }
-  if (!isAdmin(req) && existing.user.toString() !== req.user._id.toString()) {
-    return res.status(403).json({ message: 'Forbidden' });
-  }
+ 
   await Order.findByIdAndDelete(req.params.id);
   await invalidateOrdersStatsCache();
   res.json({ message: 'Order deleted' });
@@ -101,7 +87,7 @@ exports.getTopUsersByOrderCount = async (req, res) => {
     return res.json(cached);
   }
   console.log("cached miss")
-  
+
   const pipeline = [
     { $group: { _id: '$user', orderCount: { $sum: 1 } } },
     { $sort: { orderCount: -1 } },

@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/user.controller');
 const orderController = require('../controllers/order.controller');
-const { requireAuth, requireSameUserParamOrAdmin } = require('../middleware/auth.middleware');
+const { requireAuth, requireSameUserParamOrAdmin, requireAdmin } = require('../middleware/auth.middleware');
 
+router.use(requireAuth);
 /**
  * @swagger
  * /api/users:
@@ -36,7 +37,7 @@ const { requireAuth, requireSameUserParamOrAdmin } = require('../middleware/auth
  *       403:
  *         description: Not admin
  */
-router.post('/', requireAuth, userController.createUser);
+router.post('/',requireAdmin, userController.createUser);
 
 /**
  * @swagger
@@ -60,7 +61,7 @@ router.post('/', requireAuth, userController.createUser);
  *       403:
  *         description: Not admin
  */
-router.get('/', requireAuth, userController.getUsers);
+router.get('/',requireAdmin, userController.getUsers);
 
 /**
  * @swagger
@@ -94,7 +95,7 @@ router.get('/', requireAuth, userController.getUsers);
  *       403:
  *         description: Cannot view another user's orders
  */
-router.get('/:id/orders', requireAuth, requireSameUserParamOrAdmin, orderController.getOrdersByUserId);
+router.get('/:id/orders', requireSameUserParamOrAdmin, orderController.getOrdersByUserId);
 
 /**
  * @swagger
@@ -126,7 +127,7 @@ router.get('/:id/orders', requireAuth, requireSameUserParamOrAdmin, orderControl
  *       404:
  *         description: Not found
  */
-router.get('/:id', requireAuth, userController.getUser);
+router.get('/:id', requireSameUserParamOrAdmin, userController.getUser);
 
 /**
  * @swagger
@@ -166,7 +167,7 @@ router.get('/:id', requireAuth, userController.getUser);
  *       404:
  *         description: Not found
  */
-router.put('/:id', requireAuth, userController.updateUser);
+router.put('/:id', requireSameUserParamOrAdmin, userController.updateUser);
 
 /**
  * @swagger
@@ -196,6 +197,6 @@ router.put('/:id', requireAuth, userController.updateUser);
  *       404:
  *         description: Not found
  */
-router.delete('/:id', requireAuth, userController.deleteUser);
+router.delete('/:id', requireSameUserParamOrAdmin, userController.deleteUser);
 
 module.exports = router;

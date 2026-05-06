@@ -30,6 +30,7 @@ const stripPassword = (_doc, ret) => {
 userSchema.set('toJSON', {
   transform: stripPassword
 });
+
 userSchema.set('toObject', {
   transform: stripPassword
 });
