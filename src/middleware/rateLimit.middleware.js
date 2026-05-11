@@ -1,11 +1,12 @@
 const { getRedis } = require('../config/redis');
+const config = require('../config');
 
 /**
  * Redis-backed rate limit for auth routes. If Redis is disabled, requests pass through.
  */
 function rateLimitAuth(options = {}) {
-  const max = options.max ?? parseInt(process.env.AUTH_RATE_LIMIT_MAX || '40', 10);
-  const windowSec = options.windowSec ?? parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_SEC || '900', 10);
+  const max = options.max ?? config.authRateLimit.max;
+  const windowSec = options.windowSec ?? config.authRateLimit.windowSec;
   const prefix = options.prefix ?? 'ratelimit:auth';
 
   return async (req, res, next) => {

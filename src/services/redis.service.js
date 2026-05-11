@@ -1,10 +1,10 @@
 const { getRedis } = require('../config/redis');
+const config = require('../config');
 
 const STATS_PREFIX = 'cache:orders:stats:';
 
 function statsCacheTtlSec() {
-  const n = parseInt(process.env.ORDERS_STATS_CACHE_TTL_SEC || '60', 10);
-  return Number.isFinite(n) && n > 0 ? n : 60;
+  return config.ordersStatsCacheTtlSec;
 }
 
 async function cacheGetJson(key) {

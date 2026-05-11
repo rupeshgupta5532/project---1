@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/order.controller');
-const { requireAuth, requireAdmin, requireSameUserParamOrAdmin } = require('../middleware/auth.middleware');
+const { requireAuth, requireAdmin } = require('../middleware/auth.middleware');
+const { validateBody, validateParams, validateQuery } = require('../middleware/validate.middleware');
+const schemas = require('../validators/schemas');
 
 router.use(requireAuth);
 
@@ -35,7 +37,12 @@ router.use(requireAuth);
  *       403:
  *         description: Admin only
  */
-router.get('/stats/top-users', requireAdmin, orderController.getTopUsersByOrderCount);
+router.get(
+  '/stats/top-users',
+  requireAdmin,
+  validateQuery(schemas.topUsersQuery),
+  orderController.getTopUsersByOrderCount
+);
 
 /**
  * @swagger
@@ -132,7 +139,7 @@ router.get('/stats/average-order-value', requireAdmin, orderController.getAverag
  *       401:
  *         description: Unauthorized
  */
-router.post('/', orderController.createOrder);
+router.post('/', validateBody(schemas.createOrderBody), orderController.createOrder);
 
 /**
  * @swagger
@@ -153,7 +160,7 @@ router.post('/', orderController.createOrder);
  *       401:
  *         description: Unauthorized
  */
-router.get('/',requireSameUserParamOrAdmin, orderController.getOrders);
+router.get('/', orderController.getOrders);
 
 /**
  * @swagger
@@ -184,7 +191,7 @@ router.get('/',requireSameUserParamOrAdmin, orderController.getOrders);
  *       404:
  *         description: Not found
  */
-router.get('/:id', requireSameUserParamOrAdmin, orderController.getOrder);
+router.get('/:id', validateParams(schemas.mongoIdParams), orderController.getOrder);
 
 /**
  * @swagger
@@ -219,7 +226,12 @@ router.get('/:id', requireSameUserParamOrAdmin, orderController.getOrder);
  *       404:
  *         description: Not found
  */
-router.put('/:id', requireSameUserParamOrAdmin, orderController.updateOrder);
+router.put(
+  '/:id',
+  validateParams(schemas.mongoIdParams),
+  validateBody(schemas.updateOrderBody),
+  orderController.updateOrder
+);
 
 /**
  * @swagger
@@ -253,6 +265,6 @@ router.put('/:id', requireSameUserParamOrAdmin, orderController.updateOrder);
  *       404:
  *         description: Not found
  */
-router.delete('/:id', requireSameUserParamOrAdmin, orderController.deleteOrder);
+router.delete('/:id', validateParams(schemas.mongoIdParams), orderController.deleteOrder);
 
 module.exports = router;

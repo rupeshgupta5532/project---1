@@ -1,8 +1,7 @@
-require('dotenv').config();
-
+const config = require('../config');
 const swaggerJsdoc = require('swagger-jsdoc');
 
-const port = String(process.env.PORT || '8080').trim();
+const port = String(config.port).trim();
 
 const options = {
   definition: {

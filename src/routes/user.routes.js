@@ -3,6 +3,8 @@ const router = express.Router();
 const userController = require('../controllers/user.controller');
 const orderController = require('../controllers/order.controller');
 const { requireAuth, requireSameUserParamOrAdmin, requireAdmin } = require('../middleware/auth.middleware');
+const { validateBody, validateParams } = require('../middleware/validate.middleware');
+const schemas = require('../validators/schemas');
 
 router.use(requireAuth);
 /**
@@ -37,7 +39,12 @@ router.use(requireAuth);
  *       403:
  *         description: Not admin
  */
-router.post('/',requireAdmin, userController.createUser);
+router.post(
+  '/',
+  requireAdmin,
+  validateBody(schemas.adminCreateUserBody),
+  userController.createUser
+);
 
 /**
  * @swagger
@@ -95,7 +102,12 @@ router.get('/',requireAdmin, userController.getUsers);
  *       403:
  *         description: Cannot view another user's orders
  */
-router.get('/:id/orders', requireSameUserParamOrAdmin, orderController.getOrdersByUserId);
+router.get(
+  '/:id/orders',
+  validateParams(schemas.mongoIdParams),
+  requireSameUserParamOrAdmin,
+  orderController.getOrdersByUserId
+);
 
 /**
  * @swagger
@@ -127,7 +139,12 @@ router.get('/:id/orders', requireSameUserParamOrAdmin, orderController.getOrders
  *       404:
  *         description: Not found
  */
-router.get('/:id', requireSameUserParamOrAdmin, userController.getUser);
+router.get(
+  '/:id',
+  validateParams(schemas.mongoIdParams),
+  requireSameUserParamOrAdmin,
+  userController.getUser
+);
 
 /**
  * @swagger
@@ -167,7 +184,13 @@ router.get('/:id', requireSameUserParamOrAdmin, userController.getUser);
  *       404:
  *         description: Not found
  */
-router.put('/:id', requireSameUserParamOrAdmin, userController.updateUser);
+router.put(
+  '/:id',
+  validateParams(schemas.mongoIdParams),
+  requireSameUserParamOrAdmin,
+  validateBody(schemas.updateUserBody),
+  userController.updateUser
+);
 
 /**
  * @swagger
@@ -197,6 +220,11 @@ router.put('/:id', requireSameUserParamOrAdmin, userController.updateUser);
  *       404:
  *         description: Not found
  */
-router.delete('/:id', requireSameUserParamOrAdmin, userController.deleteUser);
+router.delete(
+  '/:id',
+  validateParams(schemas.mongoIdParams),
+  requireSameUserParamOrAdmin,
+  userController.deleteUser
+);
 
 module.exports = router;

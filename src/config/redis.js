@@ -1,29 +1,30 @@
 const { createClient } = require('redis');
+const config = require('./index');
+const logger = require('./logger');
 
 let client;
 
 /**
- * Connects to Redis (uses `REDIS_URL`, default `redis://127.0.0.1:6379`).
- * Set `REDIS_ENABLED=false` to skip (e.g. local dev without Redis).
+ * Connects to Redis. Set `REDIS_ENABLED=false` to skip (e.g. local dev without Redis).
  */
 const connectRedis = async () => {
-  if (process.env.REDIS_ENABLED === 'false') {
-    console.log('Redis disabled (REDIS_ENABLED=false)');
+  if (!config.redis.enabled) {
+    logger.info('Redis disabled (REDIS_ENABLED=false)');
     return;
   }
 
-  const url = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+  const url = config.redis.url;
 
   try {
     client = createClient({ url });
     client.on('error', (err) => {
-      console.error('Redis client error:', err.message);
+      logger.error(`Redis client error: ${err.message}`);
     });
     await client.connect();
     await client.ping();
-    console.log('Redis connected');
+    logger.info('Redis connected');
   } catch (error) {
-    console.error('Redis connection failed:', error);
+    logger.error('Redis connection failed', { stack: error.stack });
     process.exit(1);
   }
 };

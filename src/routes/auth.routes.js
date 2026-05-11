@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
 const { rateLimitAuth } = require('../middleware/rateLimit.middleware');
+const { validateBody } = require('../middleware/validate.middleware');
+const schemas = require('../validators/schemas');
 
 const authLimiter = rateLimitAuth();
 
@@ -46,7 +48,7 @@ const authLimiter = rateLimitAuth();
  *             schema:
  *               $ref: '#/components/schemas/ErrorMessage'
  */
-router.post('/register', authLimiter, authController.register);
+router.post('/register', authLimiter, validateBody(schemas.registerBody), authController.register);
 
 /**
  * @swagger
@@ -92,6 +94,6 @@ router.post('/register', authLimiter, authController.register);
  *             schema:
  *               $ref: '#/components/schemas/ErrorMessage'
  */
-router.post('/login', authLimiter, authController.login);
+router.post('/login', authLimiter, validateBody(schemas.loginBody), authController.login);
 
 module.exports = router;
